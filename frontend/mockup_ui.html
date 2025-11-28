@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroDrive - UI Mockup</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Default Dark Theme */
+        body.dark {
+            background-color: #1e1e2e;
+            color: white;
+        }
+        body.light {
+            background-color: #f4f4f7;
+            color: #222;
+        }
+
+        .header {
+            padding: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            border-bottom: 2px solid #444;
+        }
+
+        .theme-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background-color: #4c4c62;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .container {
+            width: 80%;
+            margin: auto;
+            margin-top: 30px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 5px;
+            border: none;
+            font-size: 16px;
+        }
+
+        .file-list {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .file-item {
+            padding: 12px;
+            border-radius: 5px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        /* Dark Style */
+        body.dark .header { background-color: #111123; }
+        body.dark .file-list { background-color: #2b2b3c; }
+        body.dark .file-item { background-color: #3b3b4f; }
+        body.dark .file-item:hover { background-color: #4c4c62; }
+
+        /* Light Style */
+        body.light .header { background-color: #ffffff; }
+        body.light .file-list { background-color: #e6e6ea; }
+        body.light .file-item { background-color: #d4d4dc; }
+        body.light .file-item:hover { background-color: #c5c5cf; }
+
+    </style>
+</head>
+<body class="dark">
+
+    <div class="header">
+        NeuroDrive - Smart File Search
+    </div>
+
+    <button class="theme-btn" onclick="toggleTheme()">Switch Theme</button>
+
+    <div class="container">
+        <div class="search-box">
+            <input type="text" placeholder="Search your files by meaning ...">
+        </div>
+
+        <div class="file-list">
+            <div class="file-item">Notes Lecture 1 - Intro to C.pdf</div>
+            <div class="file-item">Photosynthesis Assignment.docx</div>
+            <div class="file-item">Resume - Updated.docx</div>
+            <div class="file-item">DBMS Project Report.pdf</div>
+        </div>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle("light");
+            body.classList.toggle("dark");
+        }
+    </script>
+
+</body>
+</html>
