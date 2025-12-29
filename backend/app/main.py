@@ -1,5 +1,5 @@
-from fastapi import FastAPI
-from backend.app.api import scan, search, file, context
+﻿from fastapi import FastAPI
+from api import scan, search, file, context
 
 app = FastAPI(title="Context-Aware Semantic File System")
 
