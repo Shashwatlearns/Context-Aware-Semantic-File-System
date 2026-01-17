@@ -1,0 +1,2474 @@
+]633;E;for file in $(find . -name "*.py" | grep -v "__pycache__" | grep -v "temp_uploads")\x3b do     echo "================================"\x3b     echo "FILE: $file"\x3b     echo "================================"\x3b     cat "$file"\x3b     echo -e "\\n\\n"\x3b done > all_code.txt;0b052fce-0cfa-4ad5-b843-09040bb2613a]633;C================================
+FILE: ./app.py
+================================
+﻿import streamlit as st
+import requests
+import pandas as pd
+from datetime import datetime
+import time
+import os
+
+st.set_page_config(
+    page_title='NeuroDrive - Semantic File Search',
+    page_icon='🔍',
+    layout='wide',
+    initial_sidebar_state='collapsed'
+)
+
+# Professional Enterprise CSS
+st.markdown('''
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+    
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    }
+    
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stDeployButton {display:none;}
+    
+    .block-container {
+        padding: 1.5rem 3rem !important;
+        max-width: 1600px !important;
+    }
+    
+    /* Header */
+    .app-header {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        padding: 2rem 3rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .app-title {
+        font-size: 2rem;
+        font-weight: 700;
+        color: white;
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
+    
+    .app-subtitle {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.85);
+        margin-top: 0.5rem;
+        font-weight: 400;
+    }
+    
+    /* Cards */
+    .card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        transition: all 0.2s;
+    }
+    
+    .card:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Stats Card */
+    .stat-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1.25rem;
+        text-align: center;
+        transition: all 0.2s;
+    }
+    
+    .stat-card:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 0.75rem;
+        color: white;
+        font-size: 1.5rem;
+    }
+    
+    .stat-number {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: #111827;
+        margin: 0.5rem 0 0.25rem;
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        color: #6b7280;
+        font-weight: 500;
+    }
+    
+    /* Search Container */
+    .search-box {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        transition: border-color 0.2s;
+    }
+    
+    .search-box:focus-within {
+        border-color: #3b82f6;
+    }
+    
+    /* Result Card */
+    .result-item {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #3b82f6;
+        transition: all 0.2s;
+    }
+    
+    .result-item:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        transform: translateX(4px);
+    }
+    
+    .result-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .result-rank {
+        background: #1e3a8a;
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.875rem;
+        margin-right: 0.75rem;
+    }
+    
+    .result-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #111827;
+        flex: 1;
+    }
+    
+    .result-path {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+        font-family: 'SF Mono', Monaco, monospace;
+    }
+    
+    .score-badge {
+        display: inline-block;
+        padding: 0.375rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-right: 0.5rem;
+        margin-top: 0.75rem;
+    }
+    
+    .badge-primary {
+        background: #dbeafe;
+        color: #1e3a8a;
+    }
+    
+    .badge-secondary {
+        background: #f3e8ff;
+        color: #6b21a8;
+    }
+    
+    /* Drag & Drop Zone */
+    .upload-zone {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 3rem 2rem;
+        text-align: center;
+        background: #f8fafc;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    
+    .upload-zone:hover {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+    
+    .upload-icon {
+        font-size: 3rem;
+        color: #3b82f6;
+        margin-bottom: 1rem;
+    }
+    
+    .upload-text {
+        font-size: 1.125rem;
+        color: #111827;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .upload-subtext {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+    
+    /* Buttons */
+    .stButton>button {
+        background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+        color: white;
+        border: none;
+        padding: 0.625rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9375rem;
+        transition: all 0.2s;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    }
+    
+    .stButton>button:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+    
+    /* Input Fields */
+    .stTextInput>div>div>input {
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        padding: 0.625rem 1rem;
+        font-size: 0.9375rem;
+        transition: all 0.2s;
+    }
+    
+    .stTextInput>div>div>input:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 1rem;
+        background: white;
+        padding: 0.5rem;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: #6b7280;
+        padding: 0.625rem 1.25rem;
+        border-radius: 6px;
+        transition: all 0.2s;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+        color: white;
+    }
+    
+    /* Progress Bar */
+    .stProgress > div > div > div > div {
+        background: linear-gradient(90deg, #3b82f6 0%, #1e3a8a 100%);
+    }
+    
+    /* Expander */
+    .streamlit-expanderHeader {
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    /* Icons */
+    .icon {
+        margin-right: 0.5rem;
+    }
+    
+    /* Example Query Buttons */
+    .example-btn {
+        background: white;
+        border: 1px solid #e5e7eb;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 500;
+        color: #374151;
+    }
+    
+    .example-btn:hover {
+        border-color: #3b82f6;
+        background: #eff6ff;
+        color: #1e3a8a;
+    }
+    
+    /* Info Boxes */
+    .info-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        padding: 1rem;
+        color: #1e3a8a;
+        font-size: 0.9375rem;
+    }
+    
+    /* File Type Tags */
+    .file-type {
+        display: inline-block;
+        background: white;
+        border: 1px solid #e5e7eb;
+        padding: 0.75rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 500;
+        color: #374151;
+        transition: all 0.2s;
+    }
+    
+    .file-type:hover {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+</style>
+''', unsafe_allow_html=True)
+
+# Session state
+if 'api_url' not in st.session_state:
+    st.session_state.api_url = 'http://127.0.0.1:8000'
+if 'indexed_files' not in st.session_state:
+    st.session_state.indexed_files = 0
+if 'search_history' not in st.session_state:
+    st.session_state.search_history = []
+if 'uploaded_files' not in st.session_state:
+    st.session_state.uploaded_files = []
+
+# Header
+st.markdown('''
+<div class="app-header">
+    <div class="app-title">NeuroDrive</div>
+    <div class="app-subtitle">Enterprise Semantic Search Platform</div>
+</div>
+''', unsafe_allow_html=True)
+
+# Settings
+with st.expander('Settings & Configuration', expanded=False):
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        api_url = st.text_input('API Endpoint', value=st.session_state.api_url)
+        st.session_state.api_url = api_url
+    with col2:
+        use_context = st.toggle('Enable Context Ranking', value=True)
+    with col3:
+        num_results = st.slider('Maximum Results', 1, 10, 5)
+
+# Tabs
+tab1, tab2, tab3, tab4 = st.tabs(['Search', 'Index Files', 'Analytics', 'History'])
+
+# TAB 1: SEARCH
+with tab1:
+    st.markdown('<div class="search-box">', unsafe_allow_html=True)
+    col1, col2 = st.columns([5, 1])
+    with col1:
+        query = st.text_input(
+            'Search Query',
+            placeholder='Enter your search query (e.g., "machine learning research papers")',
+            label_visibility='collapsed',
+            key='search_query'
+        )
+    with col2:
+        search_btn = st.button('Search', use_container_width=True, type='primary')
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Example Queries
+    st.markdown('<p style="font-weight: 600; color: #374151; margin-bottom: 0.75rem;">Quick Search Examples</p>', unsafe_allow_html=True)
+    cols = st.columns(4)
+    examples = [
+        'Machine Learning Research',
+        'Financial Reports Q3',
+        'Meeting Minutes 2024',
+        'Technical Documentation'
+    ]
+    for col, ex in zip(cols, examples):
+        if col.button(ex, use_container_width=True):
+            st.session_state.search_query = ex
+            st.rerun()
+    
+    if search_btn and query:
+        with st.spinner('Processing search request...'):
+            try:
+                response = requests.post(
+                    f'{api_url}/search/',
+                    json={'query': query, 'k': num_results, 'use_context': use_context},
+                    timeout=30
+                )
+                
+                if response.status_code == 200:
+                    results = response.json()
+                    st.session_state.search_history.append({
+                        'query': query,
+                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        'results': results['count']
+                    })
+                    
+                    st.success(f'Found {results["count"]} matching documents')
+                    
+                    if results['count'] > 0:
+                        st.markdown('<div style="margin-top: 2rem;"></div>', unsafe_allow_html=True)
+                        for i, result in enumerate(results['results'], 1):
+                            similarity = result.get('similarity_score', 0)
+                            context = result.get('context_score', similarity)
+                            
+                            st.markdown(f'''
+                            <div class="result-item">
+                                <div class="result-header">
+                                    <div class="result-rank">{i}</div>
+                                    <div class="result-title">{result["name"]}</div>
+                                </div>
+                                <div class="result-path">{result["path"]}</div>
+                                <span class="score-badge badge-primary">Similarity: {similarity:.1%}</span>
+                                <span class="score-badge badge-secondary">Context Score: {context:.1%}</span>
+                            </div>
+                            ''', unsafe_allow_html=True)
+                            
+                            with st.expander('View Content Preview'):
+                                st.text_area('', result.get('preview', 'No preview available'), height=120, label_visibility='collapsed')
+                    else:
+                        st.info('No documents match your query. Try different keywords or index more files.')
+                else:
+                    st.error(f'Search failed with status code {response.status_code}')
+            except requests.exceptions.ConnectionError:
+                st.error('Cannot connect to backend API. Please ensure the server is running.')
+                st.code('cd backend/app && python -m uvicorn main:app --reload')
+            except Exception as e:
+                st.error(f'An error occurred: {str(e)}')
+
+# TAB 2: INDEX FILES
+with tab2:
+    st.markdown('### Add Documents to Knowledge Base')
+    
+    # Traditional folder indexing
+    st.markdown('#### Method 1: Index Folder')
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        folder_path = st.text_input(
+            'Folder Path',
+            placeholder='C:/Users/Username/Documents/MyFiles',
+            help='Enter the complete path to the folder you want to index'
+        )
+    with col2:
+        st.write('')
+        index_btn = st.button('Start Indexing', use_container_width=True, type='primary')
+    
+    if index_btn and folder_path:
+        progress = st.progress(0)
+        status = st.empty()
+        
+        try:
+            status.info('Step 1 of 3: Scanning directory...')
+            progress.progress(33)
+            time.sleep(0.3)
+            
+            response = requests.post(
+                f'{api_url}/scan/',
+                json={'folder_path': folder_path},
+                timeout=120
+            )
+            
+            status.info('Step 2 of 3: Extracting text content...')
+            progress.progress(66)
+            time.sleep(0.3)
+            
+            status.info('Step 3 of 3: Generating embeddings...')
+            progress.progress(100)
+            
+            if response.status_code == 200:
+                result = response.json()
+                status.empty()
+                progress.empty()
+                
+                st.success('Indexing completed successfully')
+                
+                col1, col2, col3 = st.columns(3)
+                
+                col1.markdown(f'''
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="stat-number">{result.get('files_scanned', 0)}</div>
+                    <div class="stat-label">Files Scanned</div>
+                </div>
+                ''', unsafe_allow_html=True)
+                
+                col2.markdown(f'''
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                    <div class="stat-number">{result.get('files_indexed', 0)}</div>
+                    <div class="stat-label">Files Indexed</div>
+                </div>
+                ''', unsafe_allow_html=True)
+                
+                success_rate = (result.get('files_indexed', 0) / max(result.get('files_scanned', 1), 1)) * 100
+                col3.markdown(f'''
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-percentage"></i></div>
+                    <div class="stat-number">{success_rate:.0f}%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+                ''', unsafe_allow_html=True)
+                
+                st.session_state.indexed_files += result.get('files_indexed', 0)
+            else:
+                status.error('Indexing operation failed')
+        except Exception as e:
+            st.error(f'Error: {str(e)}')
+        finally:
+            progress.empty()
+            status.empty()
+    
+    st.markdown('---')
+    
+    # File upload (drag & drop)
+    st.markdown('#### Method 2: Upload Files')
+    uploaded_files = st.file_uploader(
+        'Drag and drop files here',
+        type=['pdf', 'docx', 'txt'],
+        accept_multiple_files=True,
+        help='Supported formats: PDF, DOCX, TXT'
+    )
+    
+    if uploaded_files:
+        st.markdown(f'<div class="info-box">Selected {len(uploaded_files)} file(s) for upload</div>', unsafe_allow_html=True)
+        
+        if st.button('Upload & Index Files', type='primary'):
+            # Save files temporarily and index them
+            temp_dir = 'temp_uploads'
+            os.makedirs(temp_dir, exist_ok=True)
+            
+            for file in uploaded_files:
+                file_path = os.path.join(temp_dir, file.name)
+                with open(file_path, 'wb') as f:
+                    f.write(file.getbuffer())
+            
+            # Index the temp directory
+            try:
+                response = requests.post(
+                    f'{api_url}/scan/',
+                    json={'folder_path': temp_dir},
+                    timeout=120
+                )
+                if response.status_code == 200:
+                    result = response.json()
+                    st.success(f'Successfully indexed {result.get("files_indexed", 0)} files')
+                else:
+                    st.error('Upload failed')
+            except Exception as e:
+                st.error(f'Error: {str(e)}')
+    
+    st.markdown('---')
+    st.markdown('### Supported Document Types')
+    col1, col2, col3 = st.columns(3)
+    col1.markdown('<div class="file-type">PDF Documents</div>', unsafe_allow_html=True)
+    col2.markdown('<div class="file-type">Word Documents (DOCX)</div>', unsafe_allow_html=True)
+    col3.markdown('<div class="file-type">Text Files (TXT)</div>', unsafe_allow_html=True)
+
+# TAB 3: ANALYTICS
+with tab3:
+    st.markdown('### Knowledge Base Overview')
+    
+    if st.button('Refresh Analytics', use_container_width=True, type='primary'):
+        try:
+            response = requests.get(f'{api_url}/get_file/')
+            if response.status_code == 200:
+                data = response.json()
+                files = data.get('files', [])
+                total = data.get('total', 0)
+                
+                col1, col2, col3, col4 = st.columns(4)
+                
+                col1.markdown(f'''
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-database"></i></div>
+                    <div class="stat-number">{total}</div>
+                    <div class="stat-label">Total Documents</div>
+                </div>
+                ''', unsafe_allow_html=True)
+                
+                types = len(set(f.get('ext', '') for f in files))
+                col2.markdown(f'''
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="stat-number">{types}</div>
+                    <div class="stat-label">File Types</div>
+                </div>
+                ''', unsafe_allow_html=True)
+                
+                total_size = sum(f.get('size', 0) for f in files)
+                size_mb = total_size / (1024 * 1024)
+                col3.markdown(f'''
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-hdd"></i></div>
+                    <div class="stat-number">{size_mb:.1f}</div>
+                    <div class="stat-label">Total Size (MB)</div>
+                </div>
+                ''', unsafe_allow_html=True)
+                
+                searches = len(st.session_state.search_history)
+                col4.markdown(f'''
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-search"></i></div>
+                    <div class="stat-number">{searches}</div>
+                    <div class="stat-label">Total Searches</div>
+                </div>
+                ''', unsafe_allow_html=True)
+                
+                st.markdown('---')
+                
+                if files:
+                    st.markdown('### Document Distribution by Type')
+                    ext_counts = {}
+                    for f in files:
+                        ext = f.get('ext', 'unknown')
+                        ext_counts[ext] = ext_counts.get(ext, 0) + 1
+                    df = pd.DataFrame(list(ext_counts.items()), columns=['Type', 'Count'])
+                    st.bar_chart(df.set_index('Type'))
+                    
+                    st.markdown('---')
+                    st.markdown('### Indexed Documents')
+                    df = pd.DataFrame(files)
+                    df['Size (MB)'] = (df['size'] / (1024 * 1024)).round(2)
+                    df = df[['name', 'ext', 'Size (MB)']]
+                    df.columns = ['Document Name', 'Type', 'Size (MB)']
+                    st.dataframe(df, use_container_width=True, height=400)
+                else:
+                    st.markdown('<div class="info-box">No documents indexed. Navigate to Index Files tab to begin.</div>', unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f'Error: {str(e)}')
+
+# TAB 4: HISTORY
+with tab4:
+    st.markdown('### Search History')
+    
+    if st.session_state.search_history:
+        for search in reversed(st.session_state.search_history[-15:]):
+            st.markdown(f'''
+            <div class="result-item">
+                <div class="result-title">{search["query"]}</div>
+                <div class="result-path">{search["timestamp"]} • {search["results"]} results found</div>
+            </div>
+            ''', unsafe_allow_html=True)
+        
+        if st.button('Clear History', type='secondary'):
+            st.session_state.search_history = []
+            st.rerun()
+    else:
+        st.markdown('<div class="info-box">No search history available. Execute searches to populate history.</div>', unsafe_allow_html=True)
+
+# Footer
+st.markdown('---')
+st.markdown('''
+<div style="text-align: center; color: #9ca3af; padding: 1.5rem 0;">
+    <p style="font-size: 0.9375rem; font-weight: 600; color: #6b7280;">NeuroDrive - Enterprise Semantic Search</p>
+    <p style="font-size: 0.8125rem;">Powered by FastAPI, Sentence Transformers, FAISS & Streamlit</p>
+    <p style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.5rem;">Development Team: Shashwat, Pavan, Shaunak, Manvi, Tanmay</p>
+</div>
+''', unsafe_allow_html=True)
+
+
+
+================================
+FILE: ./backend/app/api/context.py
+================================
+from fastapi import APIRouter
+
+router = APIRouter()
+
+@router.get("/")
+def placeholder():
+    return {"status": "OK"}
+
+
+
+================================
+FILE: ./backend/app/api/file.py
+================================
+﻿from fastapi import APIRouter, HTTPException
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from vector_db.faiss_db import FAISSDatabase
+
+router = APIRouter()
+
+db = None
+
+@router.get('/')
+def get_all_files():
+    '''Get list of all indexed files'''
+    global db
+    
+    try:
+        if db is None:
+            db = FAISSDatabase(dimension=384)
+        
+        stats = db.get_stats()
+        
+        # Get all metadata
+        files = []
+        for metadata in db.metadata:
+            files.append({
+                'name': metadata['name'],
+                'path': metadata['path'],
+                'ext': metadata.get('ext', ''),
+                'size': metadata.get('size', 0)
+            })
+        
+        return {
+            'files': files,
+            'total': stats['total_vectors']
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+================================
+FILE: ./backend/app/api/scan.py
+================================
+﻿from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+import sys
+import os
+
+# Add backend to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from file_scanner.scanner import scan_directory
+from extraction.extraction_module import extract_content
+from embeddings.embedder import Embedder
+from vector_db.faiss_db import FAISSDatabase
+
+router = APIRouter()
+
+# Initialize embedder and database (singleton pattern)
+embedder = None
+db = None
+
+class ScanRequest(BaseModel):
+    folder_path: str
+
+@router.post('/')
+def scan_and_index(request: ScanRequest):
+    '''Scan folder, extract text, create embeddings, and store in FAISS'''
+    global embedder, db
+    
+    try:
+        # Initialize if needed
+        if embedder is None:
+            embedder = Embedder()
+        if db is None:
+            db = FAISSDatabase(dimension=embedder.get_dimension())
+        
+        # Step 1: Scan directory
+        files = scan_directory(request.folder_path)
+        if isinstance(files, dict) and 'error' in files:
+            raise HTTPException(status_code=400, detail=files['error'])
+        
+        # Step 2: Filter supported files
+        supported_exts = {'.pdf', '.docx', '.txt'}
+        supported_files = [f for f in files if f.get('ext') in supported_exts]
+        
+        if not supported_files:
+            return {'message': 'No supported files found', 'files_indexed': 0}
+        
+        # Step 3: Extract and embed
+        indexed_count = 0
+        for file in supported_files:
+            text = extract_content(file['path'], file['ext'])
+            if text and not text.startswith('Error'):
+                # Create embedding
+                embedding = embedder.encode(text)
+                
+                # Store in database
+                file_info = {
+                    'path': file['path'],
+                    'name': file['name'],
+                    'ext': file['ext'],
+                    'size': file.get('size', 0),
+                    'text': text
+                }
+                db.add(embedding, file_info)
+                indexed_count += 1
+        
+        # Save database
+        db.save()
+        
+        return {
+            'message': 'Indexing complete',
+            'files_scanned': len(files),
+            'files_indexed': indexed_count
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+================================
+FILE: ./backend/app/api/search.py
+================================
+﻿from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from embeddings.embedder import Embedder
+from vector_db.faiss_db import FAISSDatabase
+from context_engine.ranking import ContextAwareRanker
+
+router = APIRouter()
+
+embedder = None
+db = None
+ranker = ContextAwareRanker()
+
+class SearchRequest(BaseModel):
+    query: str
+    k: int = 5
+    use_context: bool = True
+
+@router.post('/')
+def search(request: SearchRequest):
+    '''Search for files using natural language query with optional context-aware ranking'''
+    global embedder, db
+    
+    try:
+        # Initialize if needed
+        if embedder is None:
+            embedder = Embedder()
+        if db is None:
+            db = FAISSDatabase(dimension=embedder.get_dimension())
+        
+        # Encode query
+        query_embedding = embedder.encode(request.query)
+        
+        # Search in FAISS
+        results = db.search(query_embedding, k=request.k)
+        
+        # Apply context-aware ranking if enabled
+        if request.use_context:
+            results = ranker.rerank(results, query=request.query)
+        
+        # Format results
+        formatted_results = []
+        for result in results:
+            formatted_results.append({
+                'rank': result.get('rank', 0),
+                'name': result['name'],
+                'path': result['path'],
+                'similarity_score': result['similarity_score'],
+                'context_score': result.get('context_score', result['similarity_score']),
+                'preview': result['text'][:200] + '...'
+            })
+        
+        return {
+            'query': request.query,
+            'context_ranking_used': request.use_context,
+            'results': formatted_results,
+            'count': len(formatted_results)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+================================
+FILE: ./backend/app/main.py
+================================
+﻿from fastapi import FastAPI
+from api import scan, search, file, context
+
+app = FastAPI(title="Context-Aware Semantic File System")
+
+# Register all API routes
+app.include_router(scan.router, prefix="/scan", tags=["Scan"])
+app.include_router(search.router, prefix="/search", tags=["Search"])
+app.include_router(file.router, prefix="/get_file", tags=["File"])
+app.include_router(context.router, prefix="/get_context", tags=["Context"])
+
+@app.get("/")
+def root():
+    return {"message": "Backend running"}
+
+
+
+================================
+FILE: ./backend/app/utils/logger.py
+================================
+from loguru import logger
+
+logger.add("app.log", rotation="1 MB")
+
+
+
+================================
+FILE: ./backend/context_engine/app.py
+================================
+from context_engine.context_builder import process_documents
+
+DATA_FOLDER = "../data/sample_files"
+
+def main():
+    contexts = process_documents(DATA_FOLDER)
+
+    print("\n===== CONTEXT ENGINE OUTPUT =====\n")
+
+    for c in contexts:
+        print(f"File: {c['name']}")
+        print(f"  Topic: {c['topic']}")
+        print(f"  Category: {c['category']}")
+        print(f"  Preview: {c['preview']}\n")
+
+if __name__ == "__main__":
+    main()
+
+
+
+================================
+FILE: ./backend/context_engine/classifier.py
+================================
+# backend/context_engine/classifier.py
+
+class FileClassifier:
+    """
+    Classifies file content into semantic categories
+    """
+
+    def __init__(self):
+        self.categories = {
+            "education": ["exam", "syllabus", "lecture", "university", "college"],
+            "finance": ["invoice", "salary", "tax", "bank", "payment"],
+            "technology": ["python", "java", "algorithm", "database", "ai"],
+            "general": []
+        }
+
+    def classify(self, text: str) -> str:
+        text = text.lower()
+
+        for category, keywords in self.categories.items():
+            for word in keywords:
+                if word in text:
+                    return category
+
+        return "general"
+
+
+
+================================
+FILE: ./backend/context_engine/context_builder.py
+================================
+﻿"""
+Context Builder for NeuroDrive
+Author: Manvi (Member 4) - Refactored by Team Lead
+Purpose: Add context-aware enhancements to search results
+"""
+
+from datetime import datetime
+from typing import Dict, List
+import os
+
+
+class ContextBuilder:
+    """Builds context information from file metadata"""
+    
+    def __init__(self):
+        self.file_type_weights = {
+            '.pdf': 1.2,    # PDFs slightly more important
+            '.docx': 1.1,   # Word docs important
+            '.txt': 1.0     # Text files baseline
+        }
+    
+    def build_context(self, file_metadata: Dict) -> Dict:
+        """
+        Build context from file metadata
+        
+        Args:
+            file_metadata: Dictionary with file info
+            
+        Returns:
+            Context dictionary with scores and features
+        """
+        context = {
+            'recency_score': self._calculate_recency_score(file_metadata),
+            'type_score': self._calculate_type_score(file_metadata),
+            'size_score': self._calculate_size_score(file_metadata),
+            'keywords': self._extract_keywords(file_metadata.get('text', ''))
+        }
+        
+        return context
+    
+    def _calculate_recency_score(self, metadata: Dict) -> float:
+        """Score based on how recent the file is (0-1)"""
+        # For now, return 1.0 (can enhance with actual timestamps later)
+        return 1.0
+    
+    def _calculate_type_score(self, metadata: Dict) -> float:
+        """Score based on file type importance"""
+        ext = metadata.get('ext', '.txt')
+        return self.file_type_weights.get(ext, 1.0)
+    
+    def _calculate_size_score(self, metadata: Dict) -> float:
+        """Score based on file size (larger = more content = higher score)"""
+        size = metadata.get('size', 0)
+        
+        # Normalize: files > 10KB get score 1.0, smaller get proportional
+        if size > 10000:
+            return 1.0
+        return size / 10000
+    
+    def _extract_keywords(self, text: str) -> List[str]:
+        """Extract important keywords from text"""
+        # Simple keyword extraction (can be enhanced)
+        words = text.lower().split()
+        
+        # Filter out common words
+        stop_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for'}
+        keywords = [w for w in words if w not in stop_words and len(w) > 3]
+        
+        # Return top 10 most frequent
+        from collections import Counter
+        return [word for word, count in Counter(keywords).most_common(10)]
+
+
+# Test
+if __name__ == '__main__':
+    builder = ContextBuilder()
+    
+    test_metadata = {
+        'name': 'test.pdf',
+        'ext': '.pdf',
+        'size': 15000,
+        'text': 'machine learning artificial intelligence data science'
+    }
+    
+    context = builder.build_context(test_metadata)
+    print('Context:', context)
+
+
+
+================================
+FILE: ./backend/context_engine/ranking.py
+================================
+﻿"""
+Ranking System for NeuroDrive
+Author: Manvi (Member 4) - Refactored by Team Lead
+Purpose: Re-rank FAISS search results with context awareness
+"""
+
+from typing import List, Dict
+from .context_builder import ContextBuilder
+
+
+class ContextAwareRanker:
+    """Re-ranks search results using context"""
+    
+    def __init__(self):
+        self.context_builder = ContextBuilder()
+        
+        # Weights for different ranking factors
+        self.weights = {
+            'similarity': 0.5,    # 50% - semantic similarity from FAISS
+            'recency': 0.2,       # 20% - how recent the file is
+            'type': 0.2,          # 20% - file type importance
+            'size': 0.1           # 10% - file size
+        }
+    
+    def rerank(self, faiss_results: List[Dict], query: str = None) -> List[Dict]:
+        """
+        Re-rank FAISS results with context awareness
+        
+        Args:
+            faiss_results: Results from FAISS search
+            query: Optional query for additional context
+            
+        Returns:
+            Re-ranked results with combined scores
+        """
+        ranked_results = []
+        
+        for result in faiss_results:
+            # Get base similarity score from FAISS
+            similarity_score = result.get('similarity_score', 0.5)
+            
+            # Build context for this file
+            context = self.context_builder.build_context(result)
+            
+            # Calculate combined score
+            combined_score = (
+                self.weights['similarity'] * similarity_score +
+                self.weights['recency'] * context['recency_score'] +
+                self.weights['type'] * context['type_score'] +
+                self.weights['size'] * context['size_score']
+            )
+            
+            # Add to result
+            result['context_score'] = combined_score
+            result['context_breakdown'] = {
+                'similarity': similarity_score,
+                'recency': context['recency_score'],
+                'type': context['type_score'],
+                'size': context['size_score']
+            }
+            
+            ranked_results.append(result)
+        
+        # Sort by combined score (highest first)
+        ranked_results.sort(key=lambda x: x['context_score'], reverse=True)
+        
+        # Update ranks
+        for i, result in enumerate(ranked_results, 1):
+            result['rank'] = i
+        
+        return ranked_results
+    
+    def explain_ranking(self, result: Dict) -> str:
+        """Generate explanation for why a file was ranked this way"""
+        breakdown = result.get('context_breakdown', {})
+        
+        explanation = f"Ranked #{result.get('rank', '?')} with score {result.get('context_score', 0):.3f}:\n"
+        explanation += f"  - Similarity: {breakdown.get('similarity', 0):.3f}\n"
+        explanation += f"  - Recency: {breakdown.get('recency', 0):.3f}\n"
+        explanation += f"  - File Type: {breakdown.get('type', 0):.3f}\n"
+        explanation += f"  - Size: {breakdown.get('size', 0):.3f}"
+        
+        return explanation
+
+
+# Test
+if __name__ == '__main__':
+    ranker = ContextAwareRanker()
+    
+    # Mock FAISS results
+    test_results = [
+        {
+            'name': 'old_small.txt',
+            'ext': '.txt',
+            'size': 5000,
+            'similarity_score': 0.8,
+            'text': 'test'
+        },
+        {
+            'name': 'recent_large.pdf',
+            'ext': '.pdf',
+            'size': 20000,
+            'similarity_score': 0.75,
+            'text': 'test'
+        }
+    ]
+    
+    ranked = ranker.rerank(test_results)
+    
+    for r in ranked:
+        print(ranker.explain_ranking(r))
+        print()
+
+
+
+================================
+FILE: ./backend/context_engine/test.py
+================================
+from classifier import classify
+
+samples = [
+    "Machine Learning Notes.pdf",
+    "OS Process Scheduling.docx",
+    "TCP IP Routing.pdf",
+    "Python Lab Assignment.txt",
+    "Project Report Final.docx",
+    "Random Document.pdf"
+]
+
+for s in samples:
+    print(f"{s}  -->  {classify(s)}")
+
+
+
+================================
+FILE: ./backend/context_engine/test_classifier.py
+================================
+from classifier import FileClassifier
+
+
+def main():
+    classifier = FileClassifier()
+
+    text1 = "This document contains python and algorithm concepts"
+    text2 = "Bank invoice and tax payment details"
+    text3 = "University exam syllabus and lecture notes"
+
+    print("Text 1 Category:", classifier.classify(text1))
+    print("Text 2 Category:", classifier.classify(text2))
+    print("Text 3 Category:", classifier.classify(text3))
+
+
+if __name__ == "__main__":
+    main()
+
+
+
+================================
+FILE: ./backend/embeddings/embedder.py
+================================
+"""
+Embeddings Module for NeuroDrive
+Author: Pavan (Member 3) - Improved by Shashwat (Team Lead)
+Purpose: Convert text into vector embeddings using Sentence Transformers
+"""
+
+from sentence_transformers import SentenceTransformer
+import numpy as np
+from typing import List, Union
+
+
+class Embedder:
+    """
+    Handles text-to-vector conversion using Sentence Transformers
+    """
+    
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+        """
+        Initialize the embedder with a pre-trained model
+        
+        Args:
+            model_name: Name of the sentence transformer model
+        """
+        print(f"🔄 Loading embedding model: {model_name}...")
+        try:
+            self.model = SentenceTransformer(model_name)
+            self.model_name = model_name
+            self.dimension = self.model.get_sentence_embedding_dimension()
+            print(f"✅ Model loaded! Embedding dimension: {self.dimension}")
+        except Exception as e:
+            print(f"❌ Error loading model: {e}")
+            raise
+    
+    def encode(self, texts: Union[str, List[str]], show_progress: bool = False) -> np.ndarray:
+        """
+        Convert text(s) into vector embeddings
+        
+        Args:
+            texts: Single text string or list of text strings
+            show_progress: Show progress bar for batch encoding
+            
+        Returns:
+            numpy array of embeddings (single vector or matrix)
+        """
+        try:
+            # Handle single text
+            if isinstance(texts, str):
+                embedding = self.model.encode(texts, show_progress_bar=False)
+                return np.array(embedding, dtype=np.float32)
+            
+            # Handle list of texts
+            embeddings = self.model.encode(
+                texts, 
+                show_progress_bar=show_progress,
+                batch_size=32
+            )
+            return np.array(embeddings, dtype=np.float32)
+            
+        except Exception as e:
+            print(f"❌ Error encoding text: {e}")
+            raise
+    
+    def get_dimension(self) -> int:
+        """
+        Get the embedding dimension size
+        
+        Returns:
+            Dimension of embedding vectors
+        """
+        return self.dimension
+    
+    def encode_batch(self, texts: List[str], batch_size: int = 32) -> np.ndarray:
+        """
+        Encode texts in batches (useful for large datasets)
+        
+        Args:
+            texts: List of text strings
+            batch_size: Number of texts to process at once
+            
+        Returns:
+            numpy array of embeddings
+        """
+        try:
+            embeddings = self.model.encode(
+                texts,
+                batch_size=batch_size,
+                show_progress_bar=True
+            )
+            return np.array(embeddings, dtype=np.float32)
+        except Exception as e:
+            print(f"❌ Error in batch encoding: {e}")
+            raise
+
+
+# Test the embedder
+if __name__ == "__main__":
+    print("🔍 Testing Embedder Module...\n")
+    
+    # Initialize embedder
+    embedder = Embedder()
+    
+    # Test 1: Single text
+    print("Test 1: Single text encoding")
+    text = "This is a sample document about machine learning."
+    embedding = embedder.encode(text)
+    print(f"✅ Text: '{text[:50]}...'")
+    print(f"✅ Embedding shape: {embedding.shape}")
+    print(f"✅ First 5 values: {embedding[:5]}\n")
+    
+    # Test 2: Multiple texts
+    print("Test 2: Batch encoding")
+    texts = [
+        "Machine learning is a subset of artificial intelligence.",
+        "Python is a popular programming language.",
+        "Data science involves statistics and programming."
+    ]
+    embeddings = embedder.encode(texts, show_progress=True)
+    print(f"✅ Encoded {len(texts)} texts")
+    print(f"✅ Embeddings shape: {embeddings.shape}")
+    print(f"✅ Dimension: {embedder.get_dimension()}\n")
+    
+    print("🎉 Embedder module test complete!")
+
+
+================================
+FILE: ./backend/embeddings/__init__.py
+================================
+# Embeddings module 
+
+
+
+================================
+FILE: ./backend/extraction/docx_extractor.py
+================================
+
+
+
+================================
+FILE: ./backend/extraction/extraction_manager.py
+================================
+
+
+
+================================
+FILE: ./backend/extraction/extraction_module.py
+================================
+from pypdf import PdfReader
+import docx
+
+
+def extract_content(path: str, ext: str) -> str:
+    """
+    Extracts text from a file based on its extension.
+
+    :param path: Full file path.
+    :param ext: File extension (e.g. '.pdf', '.docx', '.txt').
+    :return: Extracted text as a string (may be empty or contain an error message).
+    """
+    ext = (ext or "").lower().strip()
+
+    if ext == ".pdf":
+        return _extract_pdf(path)
+    elif ext == ".docx":
+        return _extract_docx(path)
+    elif ext == ".txt":
+        return _extract_txt(path)
+    else:
+        return ""
+
+
+def _extract_pdf(path: str) -> str:
+    """
+    Extract text from a PDF file.
+    """
+    try:
+        reader = PdfReader(path)
+        text_parts = []
+
+        for page in reader.pages:
+            page_text = page.extract_text() or ""
+            text_parts.append(page_text)
+
+        return "\n".join(text_parts).strip()
+
+    except Exception as e:
+        return f"Error reading PDF ({path}): {e}"
+
+
+def _extract_docx(path: str) -> str:
+    """
+    Extract text from a DOCX file.
+    """
+    try:
+        document = docx.Document(path)
+        paragraphs = [para.text for para in document.paragraphs]
+        return "\n".join(paragraphs).strip()
+    except Exception as e:
+        return f"Error reading DOCX ({path}): {e}"
+
+
+def _extract_txt(path: str) -> str:
+    """
+    Extract text from a TXT file.
+    """
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            return f.read()
+    except Exception as e:
+        return f"Error reading TXT ({path}): {e}"
+
+
+
+================================
+FILE: ./backend/extraction/pdf_extractor.py
+================================
+
+
+
+================================
+FILE: ./backend/extraction/txt_extractor.py
+================================
+
+
+
+================================
+FILE: ./backend/file_scanner/scanner.py
+================================
+import os
+from pathlib import Path
+from typing import List, Dict, Union
+
+
+def scan_directory(folder_path: str) -> Union[List[Dict], Dict]:
+    """
+    Scans the given folder and returns a list of files with basic metadata.
+    """
+    folder = Path(folder_path)
+
+    if not folder.exists():
+        return {"error": f"Folder does not exist: {folder_path}"}
+
+    files: List[Dict] = []
+
+    for root, dirs, filenames in os.walk(folder):
+        for name in filenames:
+            path = Path(root) / name
+            try:
+                stat = path.stat()
+                files.append(
+                    {
+                        "name": name,
+                        "path": str(path),
+                        "size": stat.st_size,
+                        "ext": path.suffix.lower(),
+                        "created": stat.st_ctime,
+                        "modified": stat.st_mtime,
+                    }
+                )
+            except OSError:
+                continue
+
+    return files
+
+
+
+================================
+FILE: ./backend/file_scanner/__init__.py
+================================
+
+
+
+================================
+FILE: ./backend/main.py
+================================
+
+
+
+================================
+FILE: ./backend/test_extraction.py
+================================
+import os
+
+from file_scanner.scanner import scan_directory
+from extraction_module import extract_content
+
+# Compute absolute path to data/sample_files
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FOLDER = os.path.join(PROJECT_ROOT, "data", "sample_files")
+
+
+def main():
+    print(f"Scanning folder: {FOLDER}\n")
+
+    files = scan_directory(FOLDER)
+    if isinstance(files, dict) and "error" in files:
+        print(files["error"])
+        return
+
+    print(f"Found {len(files)} files in folder.\n")
+
+    print("All files detected (name, ext):")
+    for f in files:
+        print(f"  - {f['name']}  (ext: '{f['ext']}')")
+
+    # Filter to only supported file types
+    supported_exts = {".pdf", ".docx", ".txt"}
+    usable_files = [f for f in files if f.get("ext") in supported_exts]
+
+    print("\nSupported files (PDF/DOCX/TXT):")
+    if not usable_files:
+        print("  - None found. Make sure your sample files have .pdf, .docx or .txt extensions.")
+        return
+
+    for f in usable_files:
+        print(f"  - {f['name']}  (ext: '{f['ext']}')")
+
+    # Take the first supported file
+    sample = usable_files[0]
+    print("\nUsing this file for extraction:")
+    print(sample)
+
+    text = extract_content(sample["path"], sample["ext"])
+    print("\nExtracted text preview (first 500 chars):\n")
+    print(text[:500] or "[No text extracted]")
+
+
+if __name__ == "__main__":
+    main()
+
+
+
+================================
+FILE: ./backend/test_integration.py
+================================
+"""
+Complete Integration Test for NeuroDrive
+Tests: File Scanner → Text Extraction → Embeddings → FAISS Storage → Search
+Author: Shashwat (Team Lead)
+"""
+
+import os
+import sys
+
+# Add backend to path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from file_scanner.scanner import scan_directory
+from extraction.extraction_module import extract_content
+from embeddings.embedder import Embedder
+from vector_db.faiss_db import FAISSDatabase
+
+
+def test_full_pipeline():
+    """
+    Complete integration test of all modules
+    """
+    print("="*70)
+    print("🚀 NEURODRIVE - COMPLETE INTEGRATION TEST")
+    print("="*70)
+    print()
+    
+    # Configuration
+    SAMPLE_FOLDER = os.path.join("..", "data", "sample_files")
+    INDEX_PATH = os.path.join("..", "data", "indexes", "test_index.bin")
+    
+    # ========== STEP 1: SCAN FILES ==========
+    print("📂 STEP 1: Scanning Directory")
+    print("-" * 70)
+    
+    files = scan_directory(SAMPLE_FOLDER)
+    
+    if isinstance(files, dict) and "error" in files:
+        print(f"❌ Error: {files['error']}")
+        return
+    
+    print(f"✅ Found {len(files)} total files")
+    
+    # Filter supported files
+    supported_exts = {".pdf", ".docx", ".txt"}
+    supported_files = [f for f in files if f.get("ext") in supported_exts]
+    
+    print(f"✅ Found {len(supported_files)} supported files:")
+    for f in supported_files:
+        print(f"   - {f['name']} ({f['ext']})")
+    print()
+    
+    if not supported_files:
+        print("❌ No supported files found!")
+        return
+    
+    # ========== STEP 2: EXTRACT TEXT ==========
+    print("📝 STEP 2: Extracting Text from Files")
+    print("-" * 70)
+    
+    file_data = []
+    for f in supported_files:
+        print(f"Processing: {f['name']}...", end=" ")
+        text = extract_content(f["path"], f["ext"])
+        
+        if text and not text.startswith("Error"):
+            file_data.append({
+                "path": f["path"],
+                "name": f["name"],
+                "ext": f["ext"],
+                "size": f.get("size", 0),
+                "text": text,
+                "char_count": len(text),
+                "word_count": len(text.split())
+            })
+            print(f"✅ Extracted {len(text)} chars")
+        else:
+            print(f"❌ Failed")
+    
+    print(f"\n✅ Successfully extracted text from {len(file_data)} files")
+    print()
+    
+    # ========== STEP 3: CREATE EMBEDDINGS ==========
+    print("🧠 STEP 3: Creating Embeddings")
+    print("-" * 70)
+    
+    embedder = Embedder()
+    
+    texts = [f["text"] for f in file_data]
+    print(f"Encoding {len(texts)} documents...")
+    
+    embeddings = embedder.encode(texts, show_progress=True)
+    
+    print(f"✅ Created embeddings with shape: {embeddings.shape}")
+    print(f"✅ Embedding dimension: {embedder.get_dimension()}")
+    print()
+    
+    # ========== STEP 4: STORE IN FAISS ==========
+    print("💾 STEP 4: Storing in FAISS Database")
+    print("-" * 70)
+    
+    db = FAISSDatabase(dimension=embedder.get_dimension(), index_path=INDEX_PATH)
+    
+    # Add files one by one (with metadata)
+    for embedding, file_info in zip(embeddings, file_data):
+        db.add(embedding, file_info)
+    
+    stats = db.get_stats()
+    print(f"✅ Database Statistics:")
+    for key, value in stats.items():
+        print(f"   - {key}: {value}")
+    
+    # Save database
+    db.save()
+    print("✅ Database saved to disk")
+    print()
+    
+    # ========== STEP 5: TEST SEARCH ==========
+    print("🔍 STEP 5: Testing Search Functionality")
+    print("-" * 70)
+    
+    test_queries = [
+        "machine learning and artificial intelligence",
+        "data science and programming",
+        "city and urban life"
+    ]
+    
+    for query_text in test_queries:
+        print(f"\n🔎 Query: '{query_text}'")
+        print("-" * 50)
+        
+        # Encode query
+        query_embedding = embedder.encode(query_text)
+        
+        # Search
+        results = db.search(query_embedding, k=3)
+        
+        if results:
+            print(f"✅ Found {len(results)} results:")
+            for i, result in enumerate(results, 1):
+                print(f"\n   {i}. {result['name']}")
+                print(f"      Similarity Score: {result['similarity_score']:.4f}")
+                print(f"      Path: {result['path']}")
+                print(f"      Preview: {result['text'][:150]}...")
+        else:
+            print("❌ No results found")
+    
+    print()
+    
+    # ========== STEP 6: TEST PERSISTENCE ==========
+    print("💿 STEP 6: Testing Database Persistence")
+    print("-" * 70)
+    
+    print("Loading database from disk...")
+    db2 = FAISSDatabase(dimension=embedder.get_dimension(), index_path=INDEX_PATH)
+    
+    stats2 = db2.get_stats()
+    print(f"✅ Loaded database:")
+    for key, value in stats2.items():
+        print(f"   - {key}: {value}")
+    
+    # Test search with loaded database
+    print("\nTesting search with loaded database...")
+    query_embedding = embedder.encode("programming and technology")
+    results = db2.search(query_embedding, k=2)
+    
+    print(f"✅ Found {len(results)} results from loaded database")
+    print()
+    
+    # ========== FINAL SUMMARY ==========
+    print("="*70)
+    print("🎉 INTEGRATION TEST COMPLETE!")
+    print("="*70)
+    print("\n✅ All modules working together successfully!")
+    print(f"\n📊 Summary:")
+    print(f"   - Files Scanned: {len(files)}")
+    print(f"   - Files Processed: {len(file_data)}")
+    print(f"   - Embeddings Created: {len(embeddings)}")
+    print(f"   - Vectors in Database: {stats['total_vectors']}")
+    print(f"   - Search Queries Tested: {len(test_queries)}")
+    print("\n🚀 System is ready for API integration!")
+
+
+if __name__ == "__main__":
+    try:
+        test_full_pipeline()
+    except Exception as e:
+        print(f"\n❌ ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+
+
+================================
+FILE: ./backend/vector_db/faiss_db.py
+================================
+"""
+FAISS Vector Database Module for NeuroDrive
+Author: Pavan (Member 3) - Improved by Shashwat (Team Lead)
+Purpose: Store and search vector embeddings with file metadata
+"""
+
+import faiss
+import numpy as np
+import pickle
+import os
+from typing import List, Dict, Optional, Tuple
+
+
+class FAISSDatabase:
+    """
+    Manages FAISS vector database with file metadata
+    """
+    
+    def __init__(self, dimension: int = 384, index_path: str = None):
+        """
+        Initialize FAISS database
+        
+        Args:
+            dimension: Dimension of embedding vectors
+            index_path: Path to save/load FAISS index
+        """
+        self.dimension = dimension
+        self.index_path = index_path or "./data/indexes/faiss_index.bin"
+        self.metadata_path = self.index_path.replace('.bin', '_metadata.pkl')
+        
+        # Initialize index
+        self.index = None
+        self.metadata = []  # Store file information
+        
+        # Try to load existing index, otherwise create new
+        if os.path.exists(self.index_path):
+            self.load()
+        else:
+            self._create_new_index()
+    
+    def _create_new_index(self):
+        """Create a new FAISS index"""
+        print(f"🔧 Creating new FAISS index (dimension: {self.dimension})...")
+        self.index = faiss.IndexFlatL2(self.dimension)
+        self.metadata = []
+        print("✅ New index created")
+    
+    def add(self, embeddings: np.ndarray, file_info: Dict):
+        """
+        Add embeddings with metadata to the database
+        
+        Args:
+            embeddings: Vector embeddings (can be single or batch)
+            file_info: Dictionary with file metadata
+                      Required keys: 'path', 'name', 'text'
+                      Optional: 'ext', 'size', 'created', 'modified'
+        """
+        try:
+            # Ensure embeddings are 2D
+            if embeddings.ndim == 1:
+                embeddings = embeddings.reshape(1, -1)
+            
+            # Convert to float32
+            embeddings = embeddings.astype(np.float32)
+            
+            # Add to FAISS index
+            self.index.add(embeddings)
+            
+            # Store metadata
+            self.metadata.append(file_info)
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error adding to database: {e}")
+            return False
+    
+    def add_batch(self, embeddings: np.ndarray, file_infos: List[Dict]):
+        """
+        Add multiple embeddings at once
+        
+        Args:
+            embeddings: Matrix of embeddings (n_samples x dimension)
+            file_infos: List of file metadata dictionaries
+        """
+        try:
+            if len(embeddings) != len(file_infos):
+                raise ValueError("Number of embeddings must match number of file_infos")
+            
+            # Convert to float32
+            embeddings = embeddings.astype(np.float32)
+            
+            # Add to index
+            self.index.add(embeddings)
+            
+            # Store metadata
+            self.metadata.extend(file_infos)
+            
+            print(f"✅ Added {len(embeddings)} vectors to database")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error in batch add: {e}")
+            return False
+    
+    def search(self, query_embedding: np.ndarray, k: int = 5) -> List[Dict]:
+        """
+        Search for similar vectors
+        
+        Args:
+            query_embedding: Query vector
+            k: Number of results to return
+            
+        Returns:
+            List of dictionaries with file info and similarity scores
+        """
+        try:
+            if self.index.ntotal == 0:
+                print("⚠️  Database is empty")
+                return []
+            
+            # Ensure query is 2D
+            if query_embedding.ndim == 1:
+                query_embedding = query_embedding.reshape(1, -1)
+            
+            # Convert to float32
+            query_embedding = query_embedding.astype(np.float32)
+            
+            # Limit k to available vectors
+            k = min(k, self.index.ntotal)
+            
+            # Search
+            distances, indices = self.index.search(query_embedding, k)
+            
+            # Prepare results
+            results = []
+            for i, (dist, idx) in enumerate(zip(distances[0], indices[0])):
+                if idx < len(self.metadata):
+                    result = self.metadata[idx].copy()
+                    result['distance'] = float(dist)
+                    result['similarity_score'] = float(1 / (1 + dist))  # Convert distance to similarity
+                    result['rank'] = i + 1
+                    results.append(result)
+            
+            return results
+            
+        except Exception as e:
+            print(f"❌ Error searching: {e}")
+            return []
+    
+    def save(self, index_path: str = None, metadata_path: str = None):
+        """
+        Save FAISS index and metadata to disk
+        
+        Args:
+            index_path: Path to save index (optional)
+            metadata_path: Path to save metadata (optional)
+        """
+        try:
+            # Use default paths if not provided
+            index_path = index_path or self.index_path
+            metadata_path = metadata_path or self.metadata_path
+            
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.dirname(index_path), exist_ok=True)
+            
+            # Save FAISS index
+            faiss.write_index(self.index, index_path)
+            
+            # Save metadata
+            with open(metadata_path, 'wb') as f:
+                pickle.dump(self.metadata, f)
+            
+            print(f"✅ Database saved to {index_path}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error saving database: {e}")
+            return False
+    
+    def load(self, index_path: str = None, metadata_path: str = None):
+        """
+        Load FAISS index and metadata from disk
+        
+        Args:
+            index_path: Path to index file (optional)
+            metadata_path: Path to metadata file (optional)
+        """
+        try:
+            # Use default paths if not provided
+            index_path = index_path or self.index_path
+            metadata_path = metadata_path or self.metadata_path
+            
+            if not os.path.exists(index_path):
+                print(f"⚠️  Index file not found: {index_path}")
+                self._create_new_index()
+                return False
+            
+            # Load FAISS index
+            self.index = faiss.read_index(index_path)
+            
+            # Load metadata
+            if os.path.exists(metadata_path):
+                with open(metadata_path, 'rb') as f:
+                    self.metadata = pickle.load(f)
+            else:
+                self.metadata = []
+            
+            print(f"✅ Loaded database with {self.index.ntotal} vectors")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error loading database: {e}")
+            self._create_new_index()
+            return False
+    
+    def get_stats(self) -> Dict:
+        """
+        Get database statistics
+        
+        Returns:
+            Dictionary with stats
+        """
+        return {
+            'total_vectors': self.index.ntotal if self.index else 0,
+            'dimension': self.dimension,
+            'metadata_count': len(self.metadata),
+            'index_path': self.index_path
+        }
+    
+    def clear(self):
+        """Clear all data from database"""
+        self._create_new_index()
+        print("✅ Database cleared")
+
+
+# Test the database
+if __name__ == "__main__":
+    print("🔍 Testing FAISS Database...\n")
+    
+    # Test 1: Create database
+    print("Test 1: Creating database")
+    db = FAISSDatabase(dimension=384)
+    print(f"Stats: {db.get_stats()}\n")
+    
+    # Test 2: Add some test vectors
+    print("Test 2: Adding vectors")
+    test_vectors = np.random.rand(5, 384).astype(np.float32)
+    test_files = [
+        {'path': f'/path/to/file{i}.pdf', 'name': f'file{i}.pdf', 'text': f'Sample text {i}'}
+        for i in range(5)
+    ]
+    
+    for vec, info in zip(test_vectors, test_files):
+        db.add(vec, info)
+    
+    print(f"✅ Added {len(test_files)} vectors")
+    print(f"Stats: {db.get_stats()}\n")
+    
+    # Test 3: Search
+    print("Test 3: Searching")
+    query = np.random.rand(384).astype(np.float32)
+    results = db.search(query, k=3)
+    
+    print(f"Found {len(results)} results:")
+    for r in results:
+        print(f"  - {r['name']} (score: {r['similarity_score']:.4f})")
+    print()
+    
+    # Test 4: Save and load
+    print("Test 4: Save and load")
+    db.save()
+    
+    db2 = FAISSDatabase(dimension=384)
+    print(f"Loaded stats: {db2.get_stats()}")
+    
+    print("\n🎉 FAISS Database test complete!")
+
+
+================================
+FILE: ./backend/vector_db/__init__.py
+================================
+# Vector DB module 
+
+
+
+================================
+FILE: ./backend/__init__.py
+================================
+
+
+
+================================
+FILE: ./frontend/app.py
+================================
+﻿import streamlit as st
+import requests
+import pandas as pd
+from datetime import datetime
+import time
+
+# Add this at the top of app.py after imports
+st.markdown("""
+<style>
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    /* Better spacing */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    
+    /* Prettier buttons */
+    .stButton>button {
+        border-radius: 10px;
+        font-weight: bold;
+        transition: all 0.3s;
+    }
+    
+    .stButton>button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Page config
+st.set_page_config(
+    page_title='NeuroDrive - Semantic File Search',
+    page_icon='🧠',
+    layout='wide',
+    initial_sidebar_state='expanded'
+)
+
+# Custom CSS
+st.markdown('''
+<style>
+    .main-header {
+        font-size: 3rem;
+        font-weight: bold;
+        background: linear-gradient(120deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+        padding: 1rem 0;
+    }
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1.5rem;
+        border-radius: 10px;
+        color: white;
+        text-align: center;
+    }
+    .search-result {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+        margin: 0.5rem 0;
+    }
+</style>
+''', unsafe_allow_html=True)
+
+# Initialize session state
+if 'api_url' not in st.session_state:
+    st.session_state.api_url = 'http://127.0.0.1:8000'
+if 'indexed_files' not in st.session_state:
+    st.session_state.indexed_files = 0
+if 'search_history' not in st.session_state:
+    st.session_state.search_history = []
+
+# Sidebar
+with st.sidebar:
+    st.image('https://img.icons8.com/clouds/200/brain.png', width=100)
+    st.title('⚙️ Settings')
+    
+    api_url = st.text_input(
+        'API URL',
+        value=st.session_state.api_url,
+        help='Backend API endpoint'
+    )
+    st.session_state.api_url = api_url
+    
+    st.divider()
+    
+    st.subheader('🎛️ Search Options')
+    use_context = st.toggle('Context Ranking', value=True, help='Use AI context-aware ranking')
+    num_results = st.slider('Results', 1, 10, 5)
+    
+    st.divider()
+    
+    # Stats
+    st.subheader('📊 Quick Stats')
+    if st.button('🔄 Refresh'):
+        try:
+            response = requests.get(f'{api_url}/get_file/')
+            data = response.json()
+            st.session_state.indexed_files = data.get('total', 0)
+        except:
+            pass
+    
+    st.metric('Indexed Files', st.session_state.indexed_files)
+    st.metric('Searches', len(st.session_state.search_history))
+
+# Main header
+st.markdown('<h1 class="main-header">🧠 NeuroDrive</h1>', unsafe_allow_html=True)
+st.markdown('<p style="text-align: center; font-size: 1.2rem; color: #666;">AI-Powered Semantic File Search System</p>', unsafe_allow_html=True)
+
+# Tabs
+tab1, tab2, tab3, tab4 = st.tabs(['🔍 Search', '📁 Index Files', '📊 Statistics', '📜 History'])
+
+# TAB 1: SEARCH
+with tab1:
+    st.header('Search Your Files')
+    
+    col1, col2 = st.columns([4, 1])
+    
+    with col1:
+        query = st.text_input(
+            'What are you looking for?',
+            placeholder='e.g., machine learning notes, budget report, meeting minutes...',
+            label_visibility='collapsed'
+        )
+    
+    with col2:
+        search_button = st.button('🔎 Search', type='primary', use_container_width=True)
+    
+    if search_button and query:
+        with st.spinner('🔍 Searching through your files...'):
+            try:
+                # Make API request
+                response = requests.post(
+                    f'{api_url}/search/',
+                    json={
+                        'query': query,
+                        'k': num_results,
+                        'use_context': use_context
+                    },
+                    timeout=30
+                )
+                
+                if response.status_code == 200:
+                    results = response.json()
+                    
+                    # Add to history
+                    st.session_state.search_history.append({
+                        'query': query,
+                        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        'results': results['count']
+                    })
+                    
+                    # Display results
+                    st.success(f'✅ Found {results["count"]} results')
+                    
+                    if results['count'] > 0:
+                        st.divider()
+                        
+                        for i, result in enumerate(results['results'], 1):
+                            with st.container():
+                                col1, col2, col3 = st.columns([6, 2, 2])
+                                
+                                with col1:
+                                    st.markdown(f'### 📄 {i}. {result["name"]}')
+                                    st.caption(f'📂 {result["path"]}')
+                                
+                                with col2:
+                                    similarity = result.get('similarity_score', 0)
+                                    st.metric('Similarity', f'{similarity:.1%}')
+                                
+                                with col3:
+                                    context = result.get('context_score', similarity)
+                                    st.metric('Context Score', f'{context:.1%}')
+                                
+                                # Preview
+                                with st.expander('👁️ Preview'):
+                                    preview_text = result.get('preview', 'No preview available')
+                                    st.text_area(
+                                        'Content Preview',
+                                        preview_text,
+                                        height=100,
+                                        label_visibility='collapsed'
+                                    )
+                                
+                                st.divider()
+                    else:
+                        st.warning('No results found. Try a different query.')
+                else:
+                    st.error(f'❌ Error: {response.status_code}')
+                    
+            except requests.exceptions.ConnectionError:
+                st.error('❌ Cannot connect to backend. Make sure the API server is running!')
+                st.code('cd backend/app\\npython -m uvicorn main:app --reload')
+            except Exception as e:
+                st.error(f'❌ Error: {str(e)}')
+    
+    # Example queries
+    st.divider()
+    st.subheader('💡 Try these example queries:')
+    example_cols = st.columns(4)
+    
+    examples = [
+        '🤖 machine learning',
+        '💰 financial report',
+        '📅 meeting notes',
+        '🏔️ vacation photos'
+    ]
+    
+    for col, example in zip(example_cols, examples):
+        if col.button(example, use_container_width=True):
+            st.rerun()
+
+# TAB 2: INDEX FILES
+with tab2:
+    st.header('Index New Files')
+    st.markdown('Add files to your searchable database')
+    
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        folder_path = st.text_input(
+            'Folder Path',
+            placeholder='C:/Users/YourName/Documents',
+            help='Full path to the folder you want to index'
+        )
+    
+    with col2:
+        st.write('')
+        st.write('')
+        index_button = st.button('📁 Index', type='primary', use_container_width=True)
+    
+    if index_button and folder_path:
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        try:
+            status_text.text('🔄 Scanning files...')
+            progress_bar.progress(25)
+            
+            response = requests.post(
+                f'{api_url}/scan/',
+                json={'folder_path': folder_path},
+                timeout=120
+            )
+            
+            progress_bar.progress(50)
+            status_text.text('📝 Extracting text...')
+            time.sleep(0.5)
+            
+            progress_bar.progress(75)
+            status_text.text('🧠 Creating embeddings...')
+            time.sleep(0.5)
+            
+            if response.status_code == 200:
+                result = response.json()
+                progress_bar.progress(100)
+                
+                st.success('✅ Indexing complete!')
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric('Files Scanned', result.get('files_scanned', 0))
+                with col2:
+                    st.metric('Files Indexed', result.get('files_indexed', 0))
+                with col3:
+                    success_rate = (result.get('files_indexed', 0) / max(result.get('files_scanned', 1), 1)) * 100
+                    st.metric('Success Rate', f'{success_rate:.0f}%')
+                
+                st.session_state.indexed_files = result.get('files_indexed', 0)
+                
+                st.balloons()
+            else:
+                st.error('❌ Indexing failed')
+                
+        except Exception as e:
+            st.error(f'❌ Error: {str(e)}')
+        finally:
+            progress_bar.empty()
+            status_text.empty()
+    
+    st.divider()
+    
+    # Supported file types
+    st.subheader('📋 Supported File Types')
+    cols = st.columns(3)
+    cols[0].info('📄 PDF files')
+    cols[1].info('📝 DOCX files')
+    cols[2].info('📃 TXT files')
+
+# TAB 3: STATISTICS
+with tab3:
+    st.header('Database Statistics')
+    
+    if st.button('🔄 Refresh Statistics', use_container_width=True):
+        try:
+            response = requests.get(f'{api_url}/get_file/')
+            
+            if response.status_code == 200:
+                data = response.json()
+                files = data.get('files', [])
+                total = data.get('total', 0)
+                
+                # Metrics
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.markdown('<div class="metric-card"><h2>📁</h2><h3>{}</h3><p>Total Files</p></div>'.format(total), unsafe_allow_html=True)
+                
+                with col2:
+                    types = len(set(f.get('ext', '') for f in files))
+                    st.markdown('<div class="metric-card"><h2>📋</h2><h3>{}</h3><p>File Types</p></div>'.format(types), unsafe_allow_html=True)
+                
+                with col3:
+                    total_size = sum(f.get('size', 0) for f in files)
+                    size_mb = total_size / (1024 * 1024)
+                    st.markdown('<div class="metric-card"><h2>💾</h2><h3>{:.1f} MB</h3><p>Total Size</p></div>'.format(size_mb), unsafe_allow_html=True)
+                
+                with col4:
+                    searches = len(st.session_state.search_history)
+                    st.markdown('<div class="metric-card"><h2>🔍</h2><h3>{}</h3><p>Searches</p></div>'.format(searches), unsafe_allow_html=True)
+                
+                st.divider()
+                
+                # File type distribution
+                st.subheader('📊 File Type Distribution')
+                
+                if files:
+                    ext_counts = {}
+                    for f in files:
+                        ext = f.get('ext', 'unknown')
+                        ext_counts[ext] = ext_counts.get(ext, 0) + 1
+                    
+                    df = pd.DataFrame(list(ext_counts.items()), columns=['Type', 'Count'])
+                    st.bar_chart(df.set_index('Type'))
+                
+                st.divider()
+                
+                # Files table
+                st.subheader('📁 Indexed Files')
+                
+                if files:
+                    df = pd.DataFrame(files)
+                    df['size_mb'] = df['size'] / (1024 * 1024)
+                    df = df[['name', 'ext', 'size_mb']].round(2)
+                    df.columns = ['File Name', 'Type', 'Size (MB)']
+                    st.dataframe(df, use_container_width=True, height=400)
+                else:
+                    st.info('No files indexed yet. Go to "Index Files" tab to get started!')
+        except Exception as e:
+            st.error(f'Error loading statistics: {str(e)}')
+
+# TAB 4: HISTORY
+with tab4:
+    st.header('Search History')
+    
+    if st.session_state.search_history:
+        for i, search in enumerate(reversed(st.session_state.search_history[-20:]), 1):
+            with st.container():
+                col1, col2, col3 = st.columns([5, 2, 1])
+                
+                with col1:
+                    st.markdown(f'**{search["query"]}**')
+                
+                with col2:
+                    st.caption(search['timestamp'])
+                
+                with col3:
+                    st.caption(f'{search["results"]} results')
+                
+                st.divider()
+        
+        if st.button('🗑️ Clear History'):
+            st.session_state.search_history = []
+            st.rerun()
+    else:
+        st.info('No search history yet. Start searching to see your history here!')
+
+# Footer
+st.divider()
+st.markdown('''
+<div style="text-align: center; color: #666; padding: 2rem;">
+    <p>🧠 <strong>NeuroDrive</strong> - AI-Powered Semantic File Search</p>
+    <p>Built with ❤️ using FastAPI, Sentence Transformers & Streamlit</p>
+    <p style="font-size: 0.8rem;">Team: Shashwat • Pavan • Shaunak • Manvi • Tanmay</p>
+</div>
+''', unsafe_allow_html=True)
+
+
+
+================================
+FILE: ./src/main.py
+================================
+
+
+
+================================
+FILE: ./src/semantic.py
+================================
+
+
+

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Embeddings Module for NeuroDrive
 Author: Pavan (Member 3) - Improved by Shashwat (Team Lead)
 Purpose: Convert text into vector embeddings using Sentence Transformers
@@ -21,14 +21,14 @@ class Embedder:
         Args:
             model_name: Name of the sentence transformer model
         """
-        print(f"🔄 Loading embedding model: {model_name}...")
+        print(f"[LOADING] Loading embedding model: {model_name}...")
         try:
             self.model = SentenceTransformer(model_name)
             self.model_name = model_name
             self.dimension = self.model.get_sentence_embedding_dimension()
-            print(f"✅ Model loaded! Embedding dimension: {self.dimension}")
+            print(f"[OK] Model loaded! Embedding dimension: {self.dimension}")
         except Exception as e:
-            print(f"❌ Error loading model: {e}")
+            print(f"[ERROR] Error loading model: {e}")
             raise
     
     def encode(self, texts: Union[str, List[str]], show_progress: bool = False) -> np.ndarray:
@@ -57,7 +57,7 @@ class Embedder:
             return np.array(embeddings, dtype=np.float32)
             
         except Exception as e:
-            print(f"❌ Error encoding text: {e}")
+            print(f"[ERROR] Error encoding text: {e}")
             raise
     
     def get_dimension(self) -> int:
@@ -88,13 +88,13 @@ class Embedder:
             )
             return np.array(embeddings, dtype=np.float32)
         except Exception as e:
-            print(f"❌ Error in batch encoding: {e}")
+            print(f"[ERROR] Error in batch encoding: {e}")
             raise
 
 
 # Test the embedder
 if __name__ == "__main__":
-    print("🔍 Testing Embedder Module...\n")
+    print(" Testing Embedder Module...\n")
     
     # Initialize embedder
     embedder = Embedder()
@@ -103,9 +103,9 @@ if __name__ == "__main__":
     print("Test 1: Single text encoding")
     text = "This is a sample document about machine learning."
     embedding = embedder.encode(text)
-    print(f"✅ Text: '{text[:50]}...'")
-    print(f"✅ Embedding shape: {embedding.shape}")
-    print(f"✅ First 5 values: {embedding[:5]}\n")
+    print(f"[OK] Text: '{text[:50]}...'")
+    print(f"[OK] Embedding shape: {embedding.shape}")
+    print(f"[OK] First 5 values: {embedding[:5]}\n")
     
     # Test 2: Multiple texts
     print("Test 2: Batch encoding")
@@ -115,8 +115,9 @@ if __name__ == "__main__":
         "Data science involves statistics and programming."
     ]
     embeddings = embedder.encode(texts, show_progress=True)
-    print(f"✅ Encoded {len(texts)} texts")
-    print(f"✅ Embeddings shape: {embeddings.shape}")
-    print(f"✅ Dimension: {embedder.get_dimension()}\n")
+    print(f"[OK] Encoded {len(texts)} texts")
+    print(f"[OK] Embeddings shape: {embeddings.shape}")
+    print(f"[OK] Dimension: {embedder.get_dimension()}\n")
     
-    print("🎉 Embedder module test complete!")
+    print(" Embedder module test complete!")
+

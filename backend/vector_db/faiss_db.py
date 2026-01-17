@@ -1,4 +1,4 @@
-"""
+﻿"""
 FAISS Vector Database Module for NeuroDrive
 Author: Pavan (Member 3) - Improved by Shashwat (Team Lead)
 Purpose: Store and search vector embeddings with file metadata
@@ -40,10 +40,10 @@ class FAISSDatabase:
     
     def _create_new_index(self):
         """Create a new FAISS index"""
-        print(f"🔧 Creating new FAISS index (dimension: {self.dimension})...")
+        print(f"[INIT] Creating new FAISS index (dimension: {self.dimension})...")
         self.index = faiss.IndexFlatL2(self.dimension)
         self.metadata = []
-        print("✅ New index created")
+        print("[OK] New index created")
     
     def add(self, embeddings: np.ndarray, file_info: Dict):
         """
@@ -72,7 +72,7 @@ class FAISSDatabase:
             return True
             
         except Exception as e:
-            print(f"❌ Error adding to database: {e}")
+            print(f"[ERROR] Error adding to database: {e}")
             return False
     
     def add_batch(self, embeddings: np.ndarray, file_infos: List[Dict]):
@@ -96,11 +96,11 @@ class FAISSDatabase:
             # Store metadata
             self.metadata.extend(file_infos)
             
-            print(f"✅ Added {len(embeddings)} vectors to database")
+            print(f"[OK] Added {len(embeddings)} vectors to database")
             return True
             
         except Exception as e:
-            print(f"❌ Error in batch add: {e}")
+            print(f"[ERROR] Error in batch add: {e}")
             return False
     
     def search(self, query_embedding: np.ndarray, k: int = 5) -> List[Dict]:
@@ -116,7 +116,7 @@ class FAISSDatabase:
         """
         try:
             if self.index.ntotal == 0:
-                print("⚠️  Database is empty")
+                print("[WARN]  Database is empty")
                 return []
             
             # Ensure query is 2D
@@ -145,7 +145,7 @@ class FAISSDatabase:
             return results
             
         except Exception as e:
-            print(f"❌ Error searching: {e}")
+            print(f"[ERROR] Error searching: {e}")
             return []
     
     def save(self, index_path: str = None, metadata_path: str = None):
@@ -171,11 +171,11 @@ class FAISSDatabase:
             with open(metadata_path, 'wb') as f:
                 pickle.dump(self.metadata, f)
             
-            print(f"✅ Database saved to {index_path}")
+            print(f"[OK] Database saved to {index_path}")
             return True
             
         except Exception as e:
-            print(f"❌ Error saving database: {e}")
+            print(f"[ERROR] Error saving database: {e}")
             return False
     
     def load(self, index_path: str = None, metadata_path: str = None):
@@ -192,7 +192,7 @@ class FAISSDatabase:
             metadata_path = metadata_path or self.metadata_path
             
             if not os.path.exists(index_path):
-                print(f"⚠️  Index file not found: {index_path}")
+                print(f"[WARN]  Index file not found: {index_path}")
                 self._create_new_index()
                 return False
             
@@ -206,11 +206,11 @@ class FAISSDatabase:
             else:
                 self.metadata = []
             
-            print(f"✅ Loaded database with {self.index.ntotal} vectors")
+            print(f"[OK] Loaded database with {self.index.ntotal} vectors")
             return True
             
         except Exception as e:
-            print(f"❌ Error loading database: {e}")
+            print(f"[ERROR] Error loading database: {e}")
             self._create_new_index()
             return False
     
@@ -231,12 +231,13 @@ class FAISSDatabase:
     def clear(self):
         """Clear all data from database"""
         self._create_new_index()
-        print("✅ Database cleared")
+        self.save()
+        print("[OK] Database cleared and saved")
 
 
 # Test the database
 if __name__ == "__main__":
-    print("🔍 Testing FAISS Database...\n")
+    print(" Testing FAISS Database...\n")
     
     # Test 1: Create database
     print("Test 1: Creating database")
@@ -254,7 +255,7 @@ if __name__ == "__main__":
     for vec, info in zip(test_vectors, test_files):
         db.add(vec, info)
     
-    print(f"✅ Added {len(test_files)} vectors")
+    print(f"[OK] Added {len(test_files)} vectors")
     print(f"Stats: {db.get_stats()}\n")
     
     # Test 3: Search
@@ -274,4 +275,7 @@ if __name__ == "__main__":
     db2 = FAISSDatabase(dimension=384)
     print(f"Loaded stats: {db2.get_stats()}")
     
-    print("\n🎉 FAISS Database test complete!")
+    print("\n FAISS Database test complete!")
+
+
+
