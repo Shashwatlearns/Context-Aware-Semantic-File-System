@@ -1,51 +1,113 @@
-# context_engine_run.py
-import os
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-from context_engine.context_builder import process_documents
+"""
+Ranking System for NeuroDrive
+Author: Manvi (Member 4) - Refactored by Team Lead
+Purpose: Re-rank FAISS search results with context awareness
+"""
 
-# ---------- Context Engine ----------
-DATA_FOLDER = os.path.join(os.path.dirname(__file__), "data/sample_files")
+from typing import List, Dict
+from .context_builder import ContextBuilder
 
-def run_context_engine(data_folder=DATA_FOLDER):
-    """Process all supported files and return list of context dicts"""
-    contexts = process_documents(data_folder)
-    return contexts
 
-# ---------- Ranking Functions ----------
-def rank_documents(query, contexts, top_n=5):
-    """Rank documents by similarity to the user query"""
-    if not contexts:
-        return []
+class ContextAwareRanker:
+    """Re-ranks search results using context"""
+    
+    def __init__(self):
+        self.context_builder = ContextBuilder()
+        
+        # Weights for different ranking factors
+        self.weights = {
+            'similarity': 0.5,    # 50% - semantic similarity from FAISS
+            'recency': 0.2,       # 20% - how recent the file is
+            'type': 0.2,          # 20% - file type importance
+            'size': 0.1           # 10% - file size
+        }
+    
+    def rerank(self, faiss_results: List[Dict], query: str = None) -> List[Dict]:
+        """
+        Re-rank FAISS results with context awareness
+        
+        Args:
+            faiss_results: Results from FAISS search
+            query: Optional query for additional context
+            
+        Returns:
+            Re-ranked results with combined scores
+        """
+        ranked_results = []
+        
+        for result in faiss_results:
+            # Get base similarity score from FAISS
+            similarity_score = result.get('similarity_score', 0.5)
+            
+            # Build context for this file
+            context = self.context_builder.build_context(result)
+            
+            # Calculate combined score
+            combined_score = (
+                self.weights['similarity'] * similarity_score +
+                self.weights['recency'] * context['recency_score'] +
+                self.weights['type'] * context['type_score'] +
+                self.weights['size'] * context['size_score']
+            )
+            
+            # Add to result
+            result['context_score'] = combined_score
+            result['context_breakdown'] = {
+                'similarity': similarity_score,
+                'recency': context['recency_score'],
+                'type': context['type_score'],
+                'size': context['size_score']
+            }
+            
+            ranked_results.append(result)
+        
+        # Sort by combined score (highest first)
+        ranked_results.sort(key=lambda x: x['context_score'], reverse=True)
+        
+        # Update ranks
+        for i, result in enumerate(ranked_results, 1):
+            result['rank'] = i
+        
+        return ranked_results
+    
+    def explain_ranking(self, result: Dict) -> str:
+        """Generate explanation for why a file was ranked this way"""
+        breakdown = result.get('context_breakdown', {})
+        
+        explanation = f"Ranked #{result.get('rank', '?')} with score {result.get('context_score', 0):.3f}:\n"
+        explanation += f"  - Similarity: {breakdown.get('similarity', 0):.3f}\n"
+        explanation += f"  - Recency: {breakdown.get('recency', 0):.3f}\n"
+        explanation += f"  - File Type: {breakdown.get('type', 0):.3f}\n"
+        explanation += f"  - Size: {breakdown.get('size', 0):.3f}"
+        
+        return explanation
 
-    documents = [c['preview'] for c in contexts]
-    vectorizer = TfidfVectorizer(stop_words='english')
-    tfidf_matrix = vectorizer.fit_transform([query] + documents)
-    similarities = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:]).flatten()
-    for i, c in enumerate(contexts):
-        c['score'] = float(similarities[i])
-    ranked = sorted(contexts, key=lambda x: x['score'], reverse=True)
-    return ranked[:top_n]
 
-def print_ranked_documents(ranked_docs):
-    """Nicely print ranked documents with scores"""
-    print("\n===== RANKED DOCUMENTS =====\n")
-    for idx, doc in enumerate(ranked_docs, 1):
-        print(f"{idx}. File: {doc['name']}")
-        print(f"   Topic: {doc['topic']}")
-        print(f"   Category: {doc['category']}")
-        print(f"   Score: {doc['score']:.4f}")
-        preview = doc['preview']
-        if len(preview) > 150:
-            preview = preview[:150] + "..."
-        print(f"   Preview: {preview}\n")
+# Test
+if __name__ == '__main__':
+    ranker = ContextAwareRanker()
+    
+    # Mock FAISS results
+    test_results = [
+        {
+            'name': 'old_small.txt',
+            'ext': '.txt',
+            'size': 5000,
+            'similarity_score': 0.8,
+            'text': 'test'
+        },
+        {
+            'name': 'recent_large.pdf',
+            'ext': '.pdf',
+            'size': 20000,
+            'similarity_score': 0.75,
+            'text': 'test'
+        }
+    ]
+    
+    ranked = ranker.rerank(test_results)
+    
+    for r in ranked:
+        print(ranker.explain_ranking(r))
+        print()
 
-# ---------- Main ----------
-if __name__ == "__main__":
-    print("Running Context Engine...")
-    contexts = run_context_engine()
-    print(f"Processed {len(contexts)} files.")
-
-    query = input("\nEnter your search query: ")
-    ranked_docs = rank_documents(query, contexts, top_n=5)
-    print_ranked_documents(ranked_docs)

@@ -205,3 +205,25 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+# Windows reserved
+nul
+NUL
+
+# Temp / junk
+all_code.txt
+app.py
+temp_uploads/
+*_OLD_BACKUP.py
+
+# Vector DB / indexes
+*.bin
+*.pkl
+data/indexes/
+backend/app/data/indexes/
+
+# Experimental / local code
+src/
+
+# Python cache
+__pycache__/
+*.pyc
